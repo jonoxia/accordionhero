@@ -1,4 +1,4 @@
-extends Sprite
+extends Sprite2D
 
 
 # Declare member variables here. Examples:
@@ -83,7 +83,7 @@ func set_texture_by_duration(duration):
 	duration_line.add_point(Vector2.ZERO)
 	duration_line.add_point(Vector2(duration * rootNode.space_factor, 0))
 	# TODO should the tempo should affect this length?
-	duration_line.set_default_color(Color.crimson)
+	duration_line.set_default_color(Color.CRIMSON)
 	duration_line.width = 4
 	duration_line.visible = false
 # Called every frame. 'delta' is the elapsed time since the previous frame.

@@ -30,17 +30,19 @@ var song_library = {
 	# TODO song library also needs ways to store:
 	#  - if one of the tracks needs an octave offset
 	#  - what the key should be
+	# TODO could we deduce they key signature from the notes data intead of
+	# having to hard-code it?
 	"Vampire Killer": {
 		"filenames": ["vampire_killer/Staff-3.txt", "vampire_killer/Staff-4.txt"],
 		"drum_tracks": ["vampire_killer/Staff-7.txt"],
-		"octaves": [0, 1],
+		"octave_offsets": [0, 1],
 		"sixteenth_note_duration": 120,
 		"key": "#"	
 	},
 	"Firework": {
 		"filenames": ["firework/Fireworks_channel_11.txt", "firework/Fireworks_channel_12.txt"],
 		"drum_tracks": ["firework/Fireworks_channel_7.txt", "firework/Fireworks_channel_9.txt"],
-		"octaves": [1, 0],
+		"octave_offsets": [1, 0],
 		"sixteenth_note_duration": 120,
 		"starting_time": 16 * 120,
 		"key": "bbb"
@@ -48,7 +50,7 @@ var song_library = {
 	"Psycho Killer": {
 		"filenames": ["psycho_killer/piano.txt", "psycho_killer/bass.txt"],
 		"drum_tracks": ["psycho_killer/drums.txt", "psycho_killer/drums_2.txt"],
-		"octaves": [1, 1],
+		"octave_offsets": [1, 1],
 		"sixteenth_note_duration": 96,
 		"starting_time": 16 * 96,
 		"key": "#",
@@ -57,37 +59,37 @@ var song_library = {
 	"Super Mario Bros 2": {
 		"filenames": ["super_mario_2/Piano.txt"],
 		"drum_tracks": [],
-		"octaves": [0],
+		"octave_offsets": [0],
 		"sixteenth_note_duration": 260,
 		"key": "#"
 	},
 	"Deep Space Nine": {
 		"filenames": ["deep_space_9/_2.txt", "deep_space_9_4.txt"],
 		"drum_tracks": [],
-		"octaves": [0,0],
+		"octave_offsets": [0,0],
 		"sixteenth_note_duration": 24, # !!
 		"starting_time": 0,
 		"key": "b",
 		"default_tempo": 90,
 	},
-	"Song of Storms": [],
-	"Epona": [],
-	"Moonlight Densetsu": [],
-	"Gilgamesh": [],
-	"Stairway to Heaven": [],
-	"Birdhouse in your Soul": [],
-	"Hava Nagilah": [],	
-	"Mananitas": [],
-	"Carry On My Wayward Son": [],
-	"Bohemian Rhapsody": [],
-	"Crazy Train": [],
+	#"Song of Storms": [],
+	#"Epona": [],
+	#"Moonlight Densetsu": [],
+	#"Gilgamesh": [],
+	#"Stairway to Heaven": [],
+	#"Birdhouse in your Soul": [],
+	#"Hava Nagilah": [],	
+	#"Manzanitas": [],
+	#"Carry On My Wayward Son": [],
+	#"Bohemian Rhapsody": [],
+	#"Crazy Train": [],
 	"Creep": {
 		"filenames": ["creep/_7.txt"],
 		"drum_tracks": ["creep/_2.txt", "creep/_3.txt"],
 		"sixteenth_note_duration": 48,
 		"default_tempo": 250
 	},
-	"FF6 Terra": []
+	#"FF6 Terra": []
 }
 	
 
@@ -103,7 +105,7 @@ var tempo_setting = 500
 var the_now_line = 150
 var window_width = 1500
 # Determines how close a note needs to be to show up on screen
-var space_factor = 0.5 # translation of time to space
+var space_factor = 0.5 # position of time to space
 var song_key = "bbb" # TODO determine this song by song
 
  # This too. This is in units of "midi event ticks"
@@ -126,7 +128,7 @@ var paused = false
 
 #var default_font = ThemeDB.fallback_font
 #var default_font_size = ThemeDB.fallback_font_size
-var default_font = Control.new().get_font("font")
+#var default_font = Control.new().get_font("font")
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	OS.open_midi_inputs() # Required for cross-platform reliability.
@@ -141,7 +143,7 @@ func _ready():
 	var popup = $SongSelectMenuButton.get_popup()
 	for key in song_library.keys():
 		popup.add_item(key)
-	popup.connect("id_pressed", self, "_on_song_selection")
+	popup.connect("id_pressed", Callable(self, "_on_song_selection"))
 	# populate menu with
 	#self.start_song("Firework")
 	self.reset_to_beginning()
@@ -184,22 +186,22 @@ func start_song( song_title ):
 	
 	for idx in range(len(song_metadata["filenames"])):
 		var offset
-		if "octaves" in song_metadata.keys():
-			offset = song_metadata["octaves"][idx]
+		if "octave_offsets" in song_metadata.keys():
+			offset = song_metadata["octave_offsets"][idx]
 		else:
 			offset = 0
 		var track_name = song_metadata["filenames"][idx]
 		var new_track_data = self.load_one_midi_track(track_name, offset)
 		self.song_data.append_array(new_track_data)
 	
-	self.song_data.sort_custom(self, "note_sorter")
+	self.song_data.sort_custom(Callable(self, "note_sorter"))
 	
 	
 	for track_name in song_metadata["drum_tracks"]:
 		var new_track_data = self.load_one_midi_track(track_name)
 		self.drum_data.append_array(new_track_data)
 	
-	self.drum_data.sort_custom(self, "note_sorter")
+	self.drum_data.sort_custom(Callable(self, "note_sorter"))
 	
 	if "sixteenth_note_duration" in song_metadata.keys():
 		self.sixteenth_note_duration = song_metadata["sixteenth_note_duration"]
@@ -217,8 +219,7 @@ func start_song( song_title ):
 		print("Opening file")
 		var lyric_file_path = "res://song_data/{f}".format({"f": song_metadata["lyrics"]})
 		print(lyric_file_path)
-		var file = File.new() # use FileAccess in Godot 4
-		file.open(lyric_file_path, File.READ) 
+		var file = FileAccess.open(lyric_file_path, FileAccess.READ)
 		var content = file.get_as_text()
 		var rows = content.split("\n")
 		print("Row text from lyrics file")
@@ -350,8 +351,7 @@ func note_sorter(a, b):
 
 func load_one_midi_track(filename, octave_adjust=0):
 	var path = "res://song_data/{f}".format({"f": filename})
-	var file = File.new() # use FileAccess in Godot 4
-	file.open(path, File.READ) 
+	var file = FileAccess.open(path, FileAccess.READ)
 	var content = file.get_as_text()
 	# Is there a CSV parser in Godot or do i need to split and iterate?
 	var rows = content.split("\n")
@@ -415,7 +415,7 @@ func _process(_delta):
 		finished_note.queue_free()
 	while len(oncoming_note_sprites) < len(onscreen_notes):
 		var next_note = onscreen_notes[ len(oncoming_note_sprites)]
-		var newSprite = load("res://MusicNote.tscn").instance()
+		var newSprite = load("res://MusicNote.tscn").instantiate()
 		add_child(newSprite)
 		newSprite.setup(next_note)
 		oncoming_note_sprites.append( newSprite )
@@ -429,7 +429,7 @@ func _process(_delta):
 		finished_line.queue_free()
 	while len(oncoming_measure_sprites) < len(onscreen_measure_lines):
 		var next_line_pos = onscreen_measure_lines[ len(oncoming_measure_sprites)]
-		var newLine = load("res://Measure.tscn").instance()
+		var newLine = load("res://Measure.tscn").instantiate()
 		newLine.position = Vector2(800, 150)
 		print("Instantiating measure")
 		print(next_line_pos)
@@ -510,7 +510,7 @@ func _unhandled_input(event : InputEvent):
 					self.accordion_samples[event.pitch].play()
 				
 				if not event.pitch in currently_held_sprites.keys():
-					var new_sprite = load("res://MusicNote.tscn").instance()
+					var new_sprite = load("res://MusicNote.tscn").instantiate()
 					add_child(new_sprite)
 					new_sprite.add_to_group("my_held_notes")
 					new_sprite.setup({"start_time": null,

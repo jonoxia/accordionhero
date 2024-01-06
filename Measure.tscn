@@ -8,27 +8,27 @@ script = ExtResource( 1 )
 [node name="Line2D" type="Line2D" parent="."]
 position = Vector2( 0.42173, 0.840655 )
 scale = Vector2( 1, 1.73168 )
-points = PoolVector2Array( -0.626686, 0.851059, -0.204956, 189.365 )
+points = PackedVector2Array( -0.626686, 0.851059, -0.204956, 189.365 )
 width = 5.0
 default_color = Color( 0, 0, 0, 1 )
 
 [node name="LyricLabel" type="Label" parent="."]
-margin_left = 80.9973
-margin_top = -18.0
-margin_right = 231.997
-margin_bottom = -2.0
-custom_colors/font_color = Color( 0, 0, 0, 1 )
+offset_left = 80.9973
+offset_top = -18.0
+offset_right = 231.997
+offset_bottom = -2.0
+theme_override_colors/font_color = Color( 0, 0, 0, 1 )
 text = "Lyrics"
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
 [node name="ChordLabel" type="Label" parent="."]
-margin_left = 76.9621
-margin_top = 160.076
-margin_right = 319.962
-margin_bottom = 191.076
-custom_colors/font_color = Color( 0, 0, 0, 1 )
+offset_left = 76.9621
+offset_top = 160.076
+offset_right = 319.962
+offset_bottom = 191.076
+theme_override_colors/font_color = Color( 0, 0, 0, 1 )
 text = "Chord
 "
 __meta__ = {
